@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model UserSignup {
+  // /firstname , lastname , emailid , password
+  id        String    @id @default(uuid())
+  firstName String
+  lastName  String
+  emailId   String    @unique
+  password  String
+  jobs      jobData[]
+  createdAt DateTime  @default(now())
+  updateAt  DateTime  @updatedAt
+}
+
+model jobData {
+  Jobid        String      @id @default(uuid())
+  companyName  String
+  link         String
+  position     String
+  status       String
+  createdAt DateTime  @default(now())
+  updateAt  DateTime  @updatedAt
+  userSignupId String
+  UserSignup   UserSignup @relation(fields: [userSignupId], references: [id])
+
+  // @@map("  ")
+  // ? @@map is used to The keyword @@map map, the model Category model to the database table named categories.
+}
