@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaService } from 'src/prisma/Prisma.service';
+import {Authdto} from './dto'
 
 @Injectable()
 export class UsersService {
@@ -13,7 +14,8 @@ constructor(private prisma:PrismaService){}
     async CreateUser(){
         const userData = await this.prisma.userSignup.create({
             data:{
-                firstName:
+                firstName:Authdto.firstName,
+                
             },
         })
     }
