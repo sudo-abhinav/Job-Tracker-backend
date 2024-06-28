@@ -1,6 +1,5 @@
-/* eslint-disable prettier/prettier */
+/* eslint-disable prettier/prettier */  
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaService } from 'src/prisma/Prisma.service';
 import {Authdto} from './dto'
 
@@ -11,12 +10,17 @@ constructor(private prisma:PrismaService){}
         return 'data is called'
     }
 
-    async CreateUser(){
+    async CreateUser(dto:Authdto){
         const userData = await this.prisma.userSignup.create({
             data:{
-                firstName:Authdto.firstName,
-                
+                firstName:dto.firstName,
+                lastName:dto.lasName,
+                emailId:dto.email,
+                password:dto.password
+
             },
+
         })
+        return userData
     }
 }
