@@ -1,26 +1,40 @@
 /* eslint-disable prettier/prettier */  
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/Prisma.service';
 import {Authdto} from './dto'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class UsersService {
 constructor(private prisma:PrismaService){}
-    data():string{
+
+
+    async data():Promise<string>{
         return 'data is called'
     }
 
     async CreateUser(dto:Authdto){
-        const userData = await this.prisma.userSignup.create({
-            data:{
-                firstName:dto.firstName,
-                lastName:dto.lasName,
-                emailId:dto.email,
-                password:dto.password
-
-            },
-
-        })
-        return userData
+        try {
+            const userData = await this.prisma.userSignup.create({
+                data:{
+                    firstName:dto.firstName,
+                    lastName:dto.lasName,
+                    emailId:dto.email,
+                    password:dto.password
+    
+                },
+    
+            })
+            return userData
+        } catch (error) {
+            console.log(error);
+            if (error instanceof PrismaClientKnownRequestError){
+                if(error.code === 'P2002'){
+                    throw new ForbiddenException('Crenditial Taken')
+                }
+            }
+            throw error
+            
+        }
     }
 }
