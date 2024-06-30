@@ -14,7 +14,7 @@ export class Authdto{
     // ---------------
     @IsString()
     @IsNotEmpty()
-    lasName?:string
+    lastName?:string
 // -----------
 
     @IsEmail()
