@@ -30,7 +30,7 @@ export class UsersService {
       console.log(error);
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new ForbiddenException('Crenditial Taken');
+          throw new ForbiddenException('Crenditial Taken please check');
         }
       }
       throw error;
