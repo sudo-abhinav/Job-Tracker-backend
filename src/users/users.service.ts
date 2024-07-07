@@ -4,25 +4,25 @@ import { PrismaService } from 'src/prisma/Prisma.service';
 // import { PrismaClient } from '@prisma/client';
 import { Authdto } from './dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import * as argon from 'argon2';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService
-    
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async data(): Promise<string> {
     return 'data is called';
   }
 
   async CreateUser(dto: Authdto) {
+    const hash = await argon.hash(dto.password);
     try {
       const userData = await this.prisma.userSignup.create({
         data: {
           firstName: dto.firstName,
           lastName: dto.lastName,
           emailId: dto.email,
-          password: dto.password,
+          password: hash,
         },
       });
       return userData;
@@ -36,4 +36,13 @@ export class UsersService {
       throw error;
     }
   }
+
+  async SignInUser(dto:Authdto){
+
+  }
+
+
+  // login 
+
+ 
 }
