@@ -11,8 +11,13 @@ export class UsersController {
     return this.userService.data();
   }
 
-  @Post('userSignin')
+  @Post('userSignUp')
   signin(@Body() authDto: Authdto) {
     return this.userService.CreateUser(authDto);
+  }
+
+  @Post('signIn')
+  signUp(@Body() authDto: Authdto) {
+    return this.userService.SignInUser(authDto);
   }
 }
