@@ -14,7 +14,7 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model UserSignup {
+model userSignup {
   // /firstname , lastname , emailid , password
   id        String    @id @default(uuid())
   firstName String
@@ -35,7 +35,7 @@ model jobData {
   createdAt DateTime  @default(now())
   updateAt  DateTime  @updatedAt
   userSignupId String
-  UserSignup   UserSignup @relation(fields: [userSignupId], references: [id])
+  UserSignup   userSignup @relation(fields: [userSignupId], references: [id])
 
   // @@map("  ")
   // ? @@map is used to The keyword @@map map, the model Category model to the database table named categories.

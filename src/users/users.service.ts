@@ -9,12 +9,19 @@ import { PrismaService } from 'src/prisma/Prisma.service';
 import { Authdto } from './dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as argon from 'argon2';
+import * as bcrypt from 'bcrypt';
 
 // import argon2 from 'argon2';
 
 @Injectable({})
 export class UsersService {
   constructor(private prisma: PrismaService) {}
+
+  // hasing the passoworrd
+  async hashPassword(password: string): Promise<string> {
+    const saltRounds = 10;
+    return bcrypt.hash(password, saltRounds);
+  }
 
   async data(): Promise<string> {
     return 'data is called';
@@ -24,6 +31,7 @@ export class UsersService {
     // const hash = await argon.hash(dto.password)
     // const hash = await argon.hash(dto.password);
     // console.log(hash);
+    const hashedPassword = await this.hashPassword(dto.password);
 
     try {
       const userData = await this.prisma.userSignup.create({
@@ -31,7 +39,7 @@ export class UsersService {
           firstName: dto.firstName,
           lastName: dto.lastName,
           emailId: dto.email,
-          password: dto.password,
+          password: hashedPassword,
         },
       });
       return userData;
@@ -49,23 +57,28 @@ export class UsersService {
   }
 
   async SignInUser(dto: Authdto) {
-    const { email, password } = dto;
+    // const {email, password } = dto;
 
-    const userData = await this.prisma.userSignup.findFirstOrThrow({
-      where: { emailId: email },
+
+    console.log('Received email:', dto.email);
+    console.log('Received password:', dto.password);
+
+    const userData = await this.prisma.userSignup.findUniqueOrThrow({
+      where: { emailId: dto.email },
     });
 
     console.log(userData);
 
     if (!userData) throw new UnauthorizedException('Credential Incorrect.');
-    console.log(userData);
+    // console.log(userData);
 
-    console.log(password);
+    // console.log(password);
 
-    const pwdData = password === userData.password;
-    console.log(pwdData);
+    // const pwdData = password === userData.password;
+    const isPasswordValid = await bcrypt.compare(dto.password, userData.password);
+    console.log(isPasswordValid);
 
-    if (!pwdData) throw new ForbiddenException('Password Incorrect.');
+    if (!isPasswordValid) throw new ForbiddenException('Password Incorrect.');
 
     return 'login successfully';
   }
