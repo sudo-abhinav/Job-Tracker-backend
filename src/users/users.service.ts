@@ -31,6 +31,9 @@ export class UsersService {
     // const hash = await argon.hash(dto.password)
     // const hash = await argon.hash(dto.password);
     // console.log(hash);
+
+
+
     const hashedPassword = await this.hashPassword(dto.password);
 
     try {
@@ -39,6 +42,7 @@ export class UsersService {
           firstName: dto.firstName,
           lastName: dto.lastName,
           emailId: dto.email,
+          mobileNo:dto.mobileNo,
           password: hashedPassword,
         },
       });

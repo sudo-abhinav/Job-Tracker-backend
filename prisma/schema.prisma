@@ -20,6 +20,7 @@ model userSignup {
   firstName String
   lastName  String
   emailId   String    @unique
+  mobileNo  String?   @unique
   password  String
   jobs      jobData[]
   createdAt DateTime  @default(now())
@@ -27,13 +28,13 @@ model userSignup {
 }
 
 model jobData {
-  Jobid        String      @id @default(uuid())
+  Jobid        String     @id @default(uuid())
   companyName  String
   link         String
   position     String
   status       String
-  createdAt DateTime  @default(now())
-  updateAt  DateTime  @updatedAt
+  createdAt    DateTime   @default(now())
+  updateAt     DateTime   @updatedAt
   userSignupId String
   UserSignup   userSignup @relation(fields: [userSignupId], references: [id])
 
