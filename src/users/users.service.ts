@@ -10,12 +10,16 @@ import { Authdto } from './dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as argon from 'argon2';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 // import argon2 from 'argon2';
 
 @Injectable({})
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService,
+    private jwtService: JwtService
+
+  ) {}
 
   // hasing the passoworrd
   async hashPassword(password: string): Promise<string> {
@@ -32,8 +36,6 @@ export class UsersService {
     // const hash = await argon.hash(dto.password);
     // console.log(hash);
 
-
-
     const hashedPassword = await this.hashPassword(dto.password);
 
     try {
@@ -42,7 +44,7 @@ export class UsersService {
           firstName: dto.firstName,
           lastName: dto.lastName,
           emailId: dto.email,
-          mobileNo:dto.mobileNo,
+          mobileNo: dto.mobileNo,
           password: hashedPassword,
         },
       });
@@ -59,10 +61,9 @@ export class UsersService {
       throw error;
     }
   }
-
+// ---------------------------------------------
   async SignInUser(dto: Authdto) {
     // const {email, password } = dto;
-
 
     console.log('Received email:', dto.email);
     console.log('Received password:', dto.password);
@@ -74,12 +75,12 @@ export class UsersService {
     console.log(userData);
 
     if (!userData) throw new UnauthorizedException('Credential Incorrect.');
-    // console.log(userData);
-
-    // console.log(password);
 
     // const pwdData = password === userData.password;
-    const isPasswordValid = await bcrypt.compare(dto.password, userData.password);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      userData.password,
+    );
     console.log(isPasswordValid);
 
     if (!isPasswordValid) throw new ForbiddenException('Password Incorrect.');
