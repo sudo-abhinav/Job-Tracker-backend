@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { IsAlphanumeric, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator"
+import { IsAlphanumeric, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from "class-validator"
 
 
 // ! now i am adding class-validator & calss-transformer from nest pipes so we can add validation 
@@ -22,8 +22,9 @@ export class Authdto{
     email:string
 
     @IsNumber()
+    @IsPhoneNumber('IN')
     @IsOptional()
-    mobileNo:string
+    mobileNo?:string
 
     @IsAlphanumeric()
     @IsNotEmpty()

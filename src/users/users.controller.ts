@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Authdto } from './dto';
 
@@ -15,9 +22,9 @@ export class UsersController {
   signin(@Body() authDto: Authdto) {
     return this.userService.CreateUser(authDto);
   }
-
+  @HttpCode(HttpStatus.OK)
   @Post('signIn')
   signUp(@Body() authDto: Authdto) {
-    return this.userService.SignInUser(authDto);
+    return this.userService.SignInUser(authDto.email, authDto.password);
   }
 }
