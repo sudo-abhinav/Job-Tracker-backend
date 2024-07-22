@@ -8,17 +8,19 @@ import { PrismaService } from 'src/prisma/Prisma.service';
 // import { PrismaClient } from '@prisma/client';
 import { Authdto } from './dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import * as argon from 'argon2';
+// import * as argon from 'argon2';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 // import argon2 from 'argon2';
 
 @Injectable({})
 export class UsersService {
-  constructor(private prisma: PrismaService,
-    private jwtService: JwtService
-
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private config: ConfigService,
   ) {}
 
   // hasing the passoworrd
@@ -61,32 +63,65 @@ export class UsersService {
       throw error;
     }
   }
-// ---------------------------------------------
-  async SignInUser(dto: Authdto) {
+  // ---------------------------------------------
+  async SignInUser(_email: string, _password: string) {
     // const {email, password } = dto;
 
-    console.log('Received email:', dto.email);
-    console.log('Received password:', dto.password);
+    console.log('Received email:', _email);
+    console.log('Received password:', _password);
 
-    const userData = await this.prisma.userSignup.findUniqueOrThrow({
-      where: { emailId: dto.email },
-    });
+    try {
+      const userData = await this.prisma.userSignup.findUniqueOrThrow({
+        where: { emailId: _email },
+      });
 
-    console.log(userData);
+      // console.log(userData);
 
-    if (!userData) throw new UnauthorizedException('Credential Incorrect.');
+      if (!userData) throw new UnauthorizedException('Credential Incorrect.');
 
-    // const pwdData = password === userData.password;
-    const isPasswordValid = await bcrypt.compare(
-      dto.password,
-      userData.password,
-    );
-    console.log(isPasswordValid);
+      // const pwdData = password === userData.password;
+      const isPasswordValid = await bcrypt.compare(
+        _password,
+        userData.password,
+      );
+      console.log(isPasswordValid);
 
-    if (!isPasswordValid) throw new ForbiddenException('Password Incorrect.');
+      if (!isPasswordValid) throw new ForbiddenException('Password Incorrect.');
 
-    return 'login successfully';
+      // const payload = {
+      //   id: userData.id,
+      //   email: userData.emailId,
+      //   mobile: userData.mobileNo,
+      // };
+      // return {
+      //   access_token: await this.jwtService.signAsync(payload),
+      // };
+
+      return this.signToken(userData.id, userData.emailId);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
+  async signToken(
+    userId: string,
+    email: string,
+  ): Promise<{ access_token: string }> {
+    // async signToken(userId: number, email: string) : Promise<jwtData> {
+    const payload = {
+      sub: userId,
+      email,
+    };
+    const secret = this.config.get('JWT_SECRET');
+
+    const token = await this.jwtService.signAsync(payload, {
+      expiresIn: '60m',
+      secret: secret,
+    });
+    return {
+      access_token: token,
+    };
+    // ? it will give you some good error so we have to change promise type
+  }
   // login
 }

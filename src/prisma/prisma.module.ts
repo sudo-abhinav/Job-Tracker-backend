@@ -2,6 +2,7 @@
 import { Global, Module } from '@nestjs/common';
 import { PrismaService } from './Prisma.service';
 
+
 @Global()
 @Module({
   imports:[],
