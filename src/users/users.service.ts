@@ -1,19 +1,17 @@
-/* eslint-disable prettier/prettier */
 import {
   ForbiddenException,
   Injectable,
+  // Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/Prisma.service';
 // import { PrismaClient } from '@prisma/client';
 import { Authdto } from './dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-// import * as argon from 'argon2';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-
-// import argon2 from 'argon2';
+import { Response } from 'express';
 
 @Injectable({})
 export class UsersService {
@@ -37,6 +35,10 @@ export class UsersService {
     // const hash = await argon.hash(dto.password)
     // const hash = await argon.hash(dto.password);
     // console.log(hash);
+    if (dto.password.length <= 8 || dto.password.length >= 32) {
+      return `password length is Not valid `;
+    }
+    // ! bug is here
 
     const hashedPassword = await this.hashPassword(dto.password);
 
@@ -63,47 +65,49 @@ export class UsersService {
       throw error;
     }
   }
+
+  // logout(res:Response){[
+
+  // ]}
   // ---------------------------------------------
-  async SignInUser(_email: string, _password: string) {
+  async SignInUser(_email: string, _password: string, res: Response) {
     // const {email, password } = dto;
 
     console.log('Received email:', _email);
     console.log('Received password:', _password);
+    // console.log(res);
 
     try {
       const userData = await this.prisma.userSignup.findUniqueOrThrow({
         where: { emailId: _email },
       });
 
-      // console.log(userData);
-
-      if (!userData) throw new UnauthorizedException('Credential Incorrect.');
-
-      // const pwdData = password === userData.password;
       const isPasswordValid = await bcrypt.compare(
         _password,
         userData.password,
       );
-      console.log(isPasswordValid);
 
-      if (!isPasswordValid) throw new ForbiddenException('Password Incorrect.');
-
-      // const payload = {
-      //   id: userData.id,
-      //   email: userData.emailId,
-      //   mobile: userData.mobileNo,
-      // };
-      // return {
-      //   access_token: await this.jwtService.signAsync(payload),
-      // };
-
-      return this.signToken(userData.id, userData.emailId);
+      if (userData && isPasswordValid) {
+        const userToken = this.genrateAccessToken(
+          userData.id,
+          userData.emailId,
+        );
+        res.cookie('access_token', userToken, {
+          httpOnly: true,
+          secure: true, // consider this option if your app uses HTTPS
+          sameSite: 'strict',
+        });
+        return res.status(200).send('Logged in');
+      } else {
+        return res.status(401).send('Invalid credentials');
+      }
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      return res.status(500).send('An error occurred during login');
     }
   }
 
-  async signToken(
+  async genrateAccessToken(
     userId: string,
     email: string,
   ): Promise<{ access_token: string }> {
