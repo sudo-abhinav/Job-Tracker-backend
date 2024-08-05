@@ -11,7 +11,11 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Response } from 'express';
+import { Response , Request } from 'express';
+// import { AuthService } from 'src/auth/auth.service';
+import { jwtConstants } from 'src/auth/constants/constant';
+import { Console, error, log } from 'console';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable({})
 export class UsersService {
@@ -19,7 +23,12 @@ export class UsersService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
+    private authService: AuthService,
   ) {}
+
+  testing(): string {
+    return 'route validation successfully';
+  }
 
   // hasing the passoworrd
   async hashPassword(password: string): Promise<string> {
@@ -35,6 +44,19 @@ export class UsersService {
     // const hash = await argon.hash(dto.password)
     // const hash = await argon.hash(dto.password);
     // console.log(hash);
+
+    const userData = await this.prisma.userSignup.findUniqueOrThrow({
+      where: { emailId: dto.email },
+    });
+
+    if(userData){
+      if(error instanceof PrismaClientKnownRequestError){
+        if(error.code === 'P2002'){
+          throw new ForbiddenException('Use Already Registered.. Try to Login')
+        }
+      }
+    }
+
     if (dto.password.length <= 8 || dto.password.length >= 32) {
       return `password length is Not valid `;
     }
@@ -70,62 +92,45 @@ export class UsersService {
 
   // ]}
   // ---------------------------------------------
-  async SignInUser(_email: string, _password: string, res: Response) {
-    // const {email, password } = dto;
-
-    console.log('Received email:', _email);
-    console.log('Received password:', _password);
-    // console.log(res);
-
+  async signInUser(
+    _email: string,
+    _password: string,
+    res: Response
+  ): Promise<{ access_token: string } | { error: string }> { // Adjusted return type
     try {
+      
       const userData = await this.prisma.userSignup.findUniqueOrThrow({
         where: { emailId: _email },
       });
 
-      const isPasswordValid = await bcrypt.compare(
-        _password,
-        userData.password,
-      );
+      // Verify the password
+      const isPasswordValid = await bcrypt.compare(_password, userData.password);
 
-      if (userData && isPasswordValid) {
-        const userToken = this.genrateAccessToken(
+      if (isPasswordValid) {
+        // Generate an access token
+        const { access_token } = await this.authService.generateAccessToken(
           userData.id,
-          userData.emailId,
+          userData.emailId
         );
-        res.cookie('access_token', userToken, {
+
+        
+        res.cookie('access_token', access_token, {
           httpOnly: true,
-          secure: true, // consider this option if your app uses HTTPS
+          secure: true, // Ensure this is set to true in production (HTTPS)
           sameSite: 'strict',
         });
-        return res.status(200).send('Logged in');
+
+        // Returning the token object
+        return { access_token };
       } else {
-        return res.status(401).send('Invalid credentials');
+        return { error: 'Invalid credentials' };
       }
     } catch (error) {
       console.error(error);
-      return res.status(500).send('An error occurred during login');
+      return { error: 'An error occurred during login' };
     }
   }
 
-  async genrateAccessToken(
-    userId: string,
-    email: string,
-  ): Promise<{ access_token: string }> {
-    // async signToken(userId: number, email: string) : Promise<jwtData> {
-    const payload = {
-      sub: userId,
-      email,
-    };
-    const secret = this.config.get('JWT_SECRET');
 
-    const token = await this.jwtService.signAsync(payload, {
-      expiresIn: '60m',
-      secret: secret,
-    });
-    return {
-      access_token: token,
-    };
-    // ? it will give you some good error so we have to change promise type
-  }
-  // login
 }
+
