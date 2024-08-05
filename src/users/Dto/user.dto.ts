@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { IsAlphanumeric, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from "class-validator"
+import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString, Matches, MaxLength, MinLength } from "class-validator"
 
 
 // ! now i am adding class-validator & calss-transformer from nest pipes so we can add validation 
@@ -26,9 +26,11 @@ export class Authdto{
     @IsOptional()
     mobileNo?:string
 
-    @IsAlphanumeric()
-    @IsNotEmpty()
-    password:string   
+    @IsString()
+    @MinLength(8)
+    @MaxLength(32)
+    @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {message: 'Password is too weak'})
+    password: string;  
 }
 
 

@@ -1,19 +1,21 @@
-/* eslint-disable prettier/prettier */
 import {
   ForbiddenException,
   Injectable,
+  // Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/Prisma.service';
 // import { PrismaClient } from '@prisma/client';
 import { Authdto } from './dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-// import * as argon from 'argon2';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-
-// import argon2 from 'argon2';
+import { Response , Request } from 'express';
+// import { AuthService } from 'src/auth/auth.service';
+import { jwtConstants } from 'src/auth/constants/constant';
+import { Console, error, log } from 'console';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable({})
 export class UsersService {
@@ -21,7 +23,12 @@ export class UsersService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
+    private authService: AuthService,
   ) {}
+
+  testing(): string {
+    return 'route validation successfully';
+  }
 
   // hasing the passoworrd
   async hashPassword(password: string): Promise<string> {
@@ -37,6 +44,23 @@ export class UsersService {
     // const hash = await argon.hash(dto.password)
     // const hash = await argon.hash(dto.password);
     // console.log(hash);
+
+    const userData = await this.prisma.userSignup.findUniqueOrThrow({
+      where: { emailId: dto.email },
+    });
+
+    if(userData){
+      if(error instanceof PrismaClientKnownRequestError){
+        if(error.code === 'P2002'){
+          throw new ForbiddenException('Use Already Registered.. Try to Login')
+        }
+      }
+    }
+
+    if (dto.password.length <= 8 || dto.password.length >= 32) {
+      return `password length is Not valid `;
+    }
+    // ! bug is here
 
     const hashedPassword = await this.hashPassword(dto.password);
 
@@ -63,65 +87,50 @@ export class UsersService {
       throw error;
     }
   }
+
+  // logout(res:Response){[
+
+  // ]}
   // ---------------------------------------------
-  async SignInUser(_email: string, _password: string) {
-    // const {email, password } = dto;
-
-    console.log('Received email:', _email);
-    console.log('Received password:', _password);
-
+  async signInUser(
+    _email: string,
+    _password: string,
+    res: Response
+  ): Promise<{ access_token: string } | { error: string }> { // Adjusted return type
     try {
+      
       const userData = await this.prisma.userSignup.findUniqueOrThrow({
         where: { emailId: _email },
       });
 
-      // console.log(userData);
+      // Verify the password
+      const isPasswordValid = await bcrypt.compare(_password, userData.password);
 
-      if (!userData) throw new UnauthorizedException('Credential Incorrect.');
+      if (isPasswordValid) {
+        // Generate an access token
+        const { access_token } = await this.authService.generateAccessToken(
+          userData.id,
+          userData.emailId
+        );
 
-      // const pwdData = password === userData.password;
-      const isPasswordValid = await bcrypt.compare(
-        _password,
-        userData.password,
-      );
-      console.log(isPasswordValid);
+        
+        res.cookie('access_token', access_token, {
+          httpOnly: true,
+          secure: true, // Ensure this is set to true in production (HTTPS)
+          sameSite: 'strict',
+        });
 
-      if (!isPasswordValid) throw new ForbiddenException('Password Incorrect.');
-
-      // const payload = {
-      //   id: userData.id,
-      //   email: userData.emailId,
-      //   mobile: userData.mobileNo,
-      // };
-      // return {
-      //   access_token: await this.jwtService.signAsync(payload),
-      // };
-
-      return this.signToken(userData.id, userData.emailId);
+        // Returning the token object
+        return { access_token };
+      } else {
+        return { error: 'Invalid credentials' };
+      }
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      return { error: 'An error occurred during login' };
     }
   }
 
-  async signToken(
-    userId: string,
-    email: string,
-  ): Promise<{ access_token: string }> {
-    // async signToken(userId: number, email: string) : Promise<jwtData> {
-    const payload = {
-      sub: userId,
-      email,
-    };
-    const secret = this.config.get('JWT_SECRET');
 
-    const token = await this.jwtService.signAsync(payload, {
-      expiresIn: '60m',
-      secret: secret,
-    });
-    return {
-      access_token: token,
-    };
-    // ? it will give you some good error so we have to change promise type
-  }
-  // login
 }
+
